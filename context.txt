@@ -2,31 +2,75 @@ PROJECT CONTEXT HANDOFF
 =======================
 
 Project Name: Deepgate (working title)
-Build Version: v0.0.2
-Development Mode: ACT
+Build Version: v0.0.2-hotfix.2
+Development Mode: ACT / DEBUG
 Last Updated: 2026-10-02
 
-BUILD SUMMARY
+MANDATORY ARTIFACT RULE
+-----------------------
+Every Plan, Act, and Debug response must include complete current versions of
+both index.html and context.txt. No response may identify a fix but defer the
+complete artifact delivery to a later response.
+
+BUILD PURPOSE
 -------------
-v0.0.2 implements the planned hub rework plus the first working survival,
-banking, and true-permadeath loop. It supersedes v0.0.1 as the current
-canonical playable build.
+v0.0.2-hotfix.2 is a full replacement for the broken hotfix.1 build. It keeps
+the entire v0.0.2 feature set and applies both known rendering fixes.
 
-FILES
------
-- index.html: fully self-contained playable HTML5 Canvas game.
-- context.txt: this recovery and continuation document.
+FIXES IN THIS BUILD
+-------------------
+1. Scene collectible tracker fix:
+- cloneScene now uses:
+  return { ...s, collected: new Set() };
+- This prevents source-scene undefined values from overwriting the newly created
+  Set and crashing when game logic calls .has() or .add().
 
-RUNNING / DEPLOYMENT
---------------------
-Open index.html directly in a modern desktop browser, or host it through any
-static host such as GitHub Pages. It requires no server, build tool, dependency,
-or external asset.
+2. Canvas rounded rectangle compatibility fix:
+- All direct ctx.roundRect calls were removed.
+- Portal rendering now uses a custom roundedRect(context, x, y, width, height,
+  radius) path helper based on moveTo and arcTo.
+- This avoids browser/WebView compatibility failures in draw code.
 
-GitHub Pages repository structure:
+3. Persistent runtime diagnostics:
+- Any uncaught JavaScript error displays a centered red RUNTIME ERROR panel.
+- The browser console also logs the original exception.
+- If that panel appears, copy its exact text and report it with a screenshot.
+
+HOW TO DEPLOY
+-------------
+Replace both files in the GitHub repository root:
+- index.html
+- context.txt
+
+Commit and push. Allow GitHub Pages to publish, then hard-refresh with:
+Ctrl + Shift + R
+
+GitHub Pages expected layout:
 repository root/
 - index.html
 - context.txt
+
+CURRENT FEATURES
+----------------
+- Standalone HTML5 Canvas game with no external dependencies/assets.
+- Symmetric three-deck Transit Hub.
+- Exactly two left/right portal destinations per portal deck.
+- Central Lift: universal safe deck travel via E menu.
+- Secondary stepped platform routes between decks.
+- Ascent Deck: two locked ascent portals.
+- Central Deck: locked Test Ground left, active Tutorial right.
+- Descent Deck: active Stratum 1 left, locked Stratum 2 right.
+- Roster Terminal and Hub Storage.
+- Recovery beacon.
+- Rook: 140 integrity, standard jump, speed 245.
+- Nyx: 90 integrity, double jump, speed 315.
+- Tutorial: rightward starter route with Salvage, one hazard, extraction.
+- Stratum 1: vertical cavern route with Salvage, hazards, extraction, depth HUD.
+- Green hazards damage integrity.
+- Cyan Salvage pickups are carried during a run.
+- Extraction automatically banks carried Salvage.
+- Death opens a Run Lost screen and destroys unbanked Salvage.
+- Banked Salvage persists in localStorage.
 
 CONTROLS
 --------
@@ -34,221 +78,71 @@ A / D or Left / Right Arrow: move.
 W / Up Arrow / Space: jump.
 E: interact.
 R: reset current scene.
-Esc: close any overlay.
+Esc: close a modal overlay.
 
-V0.0.2 PLAY LOOP
-----------------
-1. Spawn in Transit Hub on the central deck.
-2. Use Roster Terminal to choose Rook or Nyx.
-3. Use portal routes, lift, or secondary ramps to navigate hub.
-4. Enter Tutorial (right portal on central deck) to learn movement, Salvage,
-   hazard, extraction, and banking.
-5. Enter Stratum 1 (left portal on descent deck) for a longer/deeper risk run.
-6. Collect glowing Salvage.
-7. Avoid green crystal/energy hazards; hazards damage integrity.
-8. Reach an extraction relay and press E to bank all carried Salvage.
-9. If integrity reaches zero, current run ends: carried Salvage is lost and
-   player returns to the hub after a Run Lost summary.
-10. Inspect Hub Storage to see permanent banked Salvage total.
+CORE LOOP
+---------
+Hub -> choose fighter -> enter Tutorial or Stratum 1 -> gather Salvage ->
+avoid hazards -> extract and bank Salvage OR die and lose unbanked Salvage ->
+return to hub.
 
-HUB STRUCTURE: IMPLEMENTED
---------------------------
-The hub is now a vertically symmetric three-deck transit tower.
-
-Ascent deck:
-- West Ascent I: locked left portal.
-- East Ascent I: locked right portal.
-- Central lift core.
-
-Central deck:
-- Test Ground: locked placeholder, left portal.
-- Tutorial: active starter portal, right portal.
-- Roster Terminal on left side.
-- Hub Storage on right side.
-- Recovery Beacon and Lift Core at center.
-
-Descent deck:
-- Stratum 1: active left portal.
-- Stratum 2: locked right portal.
-- Central lift core.
-
-Hub rules implemented:
-- Every portal deck has exactly two portal destinations.
-- Every portal pair is left/right symmetric.
-- Central lift provides reliable universal navigation.
-- Stepped side ramps provide a manual secondary traversal path between decks.
-- Any fighter can reach all hub decks without requiring double jump or special
-  movement.
-
-CENTRAL LIFT: IMPLEMENTED
--------------------------
-- Interact with any lift core using E.
-- Overlay allows immediate safe travel to Ascent, Central, or Descent deck.
-- Lift is the authoritative fast/accessible hub route.
-- Real-time lift animation is deferred.
-
-SECONDARY TRAVERSAL: IMPLEMENTED
---------------------------------
-- Symmetric stepped platform routes on each side of hub join deck elevations.
-- They use normal movement/jumping; no special climbing physics required.
-- They are optional flavor/expression routes; lift remains primary.
-
-ROSTER: IMPLEMENTED
--------------------
-Rook:
-- Speed: 245.
-- Standard single jump.
-- Integrity: 140.
-- Gold/orange visual identity.
-
-Nyx:
-- Speed: 315.
-- Double jump.
-- Integrity: 90.
-- Purple visual identity.
-
-Selecting a fighter creates a fresh base-kit run, clearing carried Salvage and
-restoring integrity to that fighter's maximum.
-
-SCENES: IMPLEMENTED
--------------------
-1. Transit Hub
-- Three decks, portals/stations/lift and manual ramps.
-
-2. Tutorial: Outbound Walk
-- Primarily rightward compact starter route.
-- Teaches movement/jump, interaction prompts, Salvage pickup, hazard damage,
-  safe extraction, and automatic banking.
-- Three Salvage pickups.
-- One small hazard.
-
-3. Stratum 1: Gloam Cavern
-- Tall vertically descending platform area.
-- Fifteen Salvage pickups.
-- Multiple increasingly dangerous green crystal/energy hazard fields.
-- Extraction relay near bottom route.
-- Tracks maximum depth reached for current run.
-
-SURVIVAL / PERMADEATH: IMPLEMENTED
------------------------------------
-Salvage:
-- Glowing cyan squares are collectible Salvage.
-- Pickups enter RunState.carriedInventory.salvage.
-- In zone HUD shows CARRIED SALVAGE.
-
-Hazards:
-- Green crystal/energy fields damage player on contact.
-- Damage has a short invulnerability interval to prevent instant repeated hits.
-- Hazard damage only applies outside the hub.
-
-Extraction:
-- Interact with a Safe Extraction/Extraction Relay.
-- All carried Salvage transfers automatically to AccountState.hubStorage.salvage.
-- Browser account data is saved.
-- The run resets to a fresh version of selected fighter at hub.
-- A RUN SECURED notification reports banked total.
-
-Death:
-- When integrity reaches zero, a Run Lost summary opens.
-- Summary displays fighter, maximum depth, Salvage lost, and banked Salvage
-  preserved.
-- Carried Salvage and all temporary run data are erased on Return to Hub.
-- Account banked Salvage remains unchanged.
-
-STATE / PERSISTENCE
--------------------
-AccountState, saved with localStorage key "deepgate-account-v002":
-- unlockedCharacters
-- hubStorage.salvage
-- unlockedPortals
-- hubUpgrades
-- discoveries
-
-RunState, intentionally non-persistent and wiped after death/extraction/new
-fighter choice:
-- selectedCharacter
-- hp
-- carriedInventory.salvage
-- tempStats
-- scene
-- maxDepth
-- started
-
-Important testing implications:
-- Refreshing page creates a fresh run and clears any carried Salvage.
-- Banked Salvage remains in same browser/profile/site origin.
-- Incognito/private browsing or clearing site data erases localStorage.
-- A different GitHub Pages domain/path may have separate browser storage.
-
-TECHNICAL IMPLEMENTATION
+PERSISTENCE / PERMADEATH
 ------------------------
-- HTML5 Canvas renderer.
-- Embedded HTML/CSS/JavaScript in index.html.
-- Responsive canvas / high-DPI sizing.
-- Player physics: gravity, horizontal movement, jump, Nyx double jump.
-- Static AABB platform collision and world bounds.
-- Smooth clamped camera follows in both axes.
-- Scene system and portal transition system.
-- Proximity interaction system.
-- Canvas HUD, notifications, and modal HTML overlays.
-- localStorage account save/load.
-- Data-defined static scene platforms/interactables/hazards/Salvage.
+Account state is stored through localStorage key: deepgate-account-v002
 
-KNOWN LIMITATIONS / DEFERRED WORK
----------------------------------
-- No attacks, combat system, enemies, or enemy AI.
-- Test Ground is a non-functional locked placeholder.
-- Locked portals have no unlock progression yet.
-- Hub Storage is display-only; banking is automatic at extraction.
-- No manual inventory, deposit, withdraw, crafting, or equipment.
-- No configurable options/pause screen.
-- No sound, music, animation frames, particles beyond simple visual glow.
-- No procedural generation.
-- No account save export/import; only browser localStorage.
-- No mobile/touch controls.
-- No multiplayer.
+Persists:
+- banked Salvage,
+- future account unlocks/progression structure.
 
-NEXT RECOMMENDED PLAN MILESTONE
---------------------------------
-v0.0.3 — Combat Foundation and Test Ground.
-Suggested scope:
-1. Make Test Ground portal available.
-2. Add attack input and universal attack state framework.
-3. Add hitboxes/hurtboxes, damage, knockback, brief hit invulnerability.
-4. Add one training dummy in Test Ground.
-5. Give Rook and Nyx distinct first attacks.
-6. Add one basic enemy to Stratum 1 only after combat is readable.
-7. Preserve survival/banking/death behavior.
+Does not persist and is lost on death:
+- carried Salvage,
+- current health,
+- current scene/run position,
+- future temporary stats/items/upgrades.
 
-OPEN DESIGN DECISIONS
----------------------
-- Final project title.
-- Setting/lore and reusable-fighter explanation.
-- Exact combat speed/input scheme.
-- Whether extraction should always end a run (current behavior) or permit later
-  redeployment in a continuing run.
-- Portal unlocking and account progression rules.
-- Crafting/equipment scope.
-- Handcrafted/procedural/hybrid content approach.
-- Multiplayer remains explicitly deferred.
+Testing note:
+- Browser refresh starts a new run and clears carried Salvage.
+- Banked Salvage remains for the same browser profile and site origin.
+- Incognito/private mode, clearing site data, or a changed domain/path can
+  create a fresh account state.
+
+HOTFIX.2 TEST CHECKLIST
+-----------------------
+1. The game must show platforms, player, HUD, portals, and hub stations.
+2. No blank canvas should occur.
+3. Roster terminal opens and allows Rook/Nyx selection.
+4. Lift opens and transports player among three decks.
+5. Tutorial loads and displays Salvage/hazard/extraction.
+6. Stratum 1 loads and displays platforms, Salvage, hazards, and depth HUD.
+7. Extraction banks Salvage; Hub Storage reflects new total after return.
+8. If health reaches zero, Run Lost overlay displays and carried Salvage is lost.
+9. If an error occurs, report the exact text from the red RUNTIME ERROR panel.
+
+KNOWN LIMITATIONS
+-----------------
+- No attack/combat system, enemies, enemy AI, or training dummy.
+- Test Ground remains locked placeholder.
+- No portal unlocking logic.
+- No manual inventory/deposit/withdraw system; extraction auto-banks Salvage.
+- No crafting, equipment, audio, animation frames, procedural generation,
+  mobile controls, multiplayer, or account export/import.
+
+NEXT RECOMMENDED PLAN TARGET
+----------------------------
+v0.0.3 — Combat Foundation and Test Ground:
+- Unlock Test Ground.
+- Add universal attack/hitbox/hurtbox system.
+- Add knockback and hit feedback.
+- Add a training dummy.
+- Give Rook and Nyx unique first attacks.
+- Later add a basic enemy to Stratum 1.
 
 CHANGELOG
 ---------
-v0.0.0 — 2026-10-02
-- Planning baseline; roster survival platformer, vertical hub, and run-based
-  permadeath direction established.
-
-v0.0.1 — 2026-10-02
-- Implemented initial Hub and First Descent traversal prototype.
-
-v0.0.2 — 2026-10-02
-- Rebuilt hub as symmetrical three-deck transit tower.
-- Enforced two left/right portals on each portal deck.
-- Added central functional lift and manual secondary ramp traversal.
-- Added Test Ground placeholder left of central deck and Tutorial active portal
-  right of central deck.
-- Added Tutorial scene.
-- Added Salvage pickups, carried/banked HUD counts, automatic extraction
-  banking, AccountState localStorage persistence, environmental hazards,
-  damage, and true run-loss/permadeath summary.
-- Updated Stratum 1 with resources, hazards, and extraction loop.
+v0.0.0 — Initial planning baseline.
+v0.0.1 — Hub and First Descent traversal prototype.
+v0.0.2 — Symmetric hub, lift, tutorial, Salvage, hazards, banking, persistence,
+           and run-loss loop.
+v0.0.2-hotfix.1 — Attempted collectible tracker initialization correction.
+v0.0.2-hotfix.2 — Full replacement build; fixes collectible Set order, removes
+                    Canvas roundRect dependency, and adds persistent error UI.

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deepgate Prototype — v0.0.1</title>
+<style>
+  :root{color-scheme:dark} *{box-sizing:border-box} body{margin:0;min-height:100vh;background:#080c14;color:#dcecff;font:14px/1.35 system-ui,Segoe UI,Roboto,Arial,sans-serif;display:grid;place-items:center;overflow:hidden} #shell{position:relative;width:min(100vw,1280px);height:min(100vh,760px);background:#0b1220;box-shadow:0 0 0 1px #29425c,0 18px 70px #000} canvas{display:block;width:100%;height:100%;image-rendering:pixelated} #title{position:absolute;left:16px;top:12px;font-weight:800;letter-spacing:.14em;color:#d9f7ff;text-shadow:0 0 12px #42c7e8;pointer-events:none} #help{position:absolute;right:14px;bottom:12px;text-align:right;color:#9db8cf;font-size:12px;pointer-events:none} #overlay{position:absolute;inset:0;display:none;place-items:center;background:rgba(3,7,14,.78);z-index:2} #overlay.show{display:grid}.panel{width:min(680px,92%);border:1px solid #56d8ef;background:linear-gradient(145deg,#101d31,#08111e);padding:22px;box-shadow:0 0 35px #0aa8d455}.panel h2{margin:0 0 5px;color:#8ff6ff;letter-spacing:.08em}.panel p{margin:6px 0 18px;color:#b5c8d9}.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.choice{border:1px solid #395d77;background:#0b1625;color:#eaf8ff;padding:16px;text-align:left;cursor:pointer;min-height:150px}.choice:hover,.choice:focus{outline:none;border-color:#8ff6ff;background:#10243a}.choice h3{margin:0 0 7px;color:#fff}.choice small{color:#a8c0d4}.tag{display:inline-block;margin-top:12px;padding:3px 7px;border-radius:3px;background:#173b51;color:#95efff;font-size:11px;letter-spacing:.08em}.footer{margin-top:16px;color:#8ea7ba;font-size:12px}.notice{position:absolute;left:50%;top:12%;transform:translateX(-50%);padding:10px 16px;background:#103126;border:1px solid #73f2b1;color:#e2fff1;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:3;font-weight:700}.notice.show{opacity:1}@media(max-width:620px){.choices{grid-template-columns:1fr}.panel{padding:16px}#help{display:none}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <canvas id="game" aria-label="Deepgate game prototype"></canvas>
+  <div id="title">DEEPGATE <span style="color:#6f91ab;font-size:11px">v0.0.1</span></div>
+  <div id="help">A/D or ←/→ move &nbsp; • &nbsp; W/↑/Space jump &nbsp; • &nbsp; E interact &nbsp; • &nbsp; R reset scene</div>
+  <div id="notice" class="notice"></div>
+  <div id="overlay"><div class="panel"><h2>ROSTER TERMINAL</h2><p>Select an expedition shell. This build demonstrates movement roles only.</p><div class="choices"><button class="choice" data-id="rook"><h3>ROOK</h3><small>Armored scavenger</small><p>Heavy, steady movement. Standard jump. Higher base integrity.</p><span class="tag">HP 140 • SPEED 250</span></button><button class="choice" data-id="nyx"><h3>NYX</h3><small>Ruins runner</small><p>Fast traversal specialist. Gains one aerial double jump. Lower base integrity.</p><span class="tag">HP 90 • SPEED 315 • DOUBLE JUMP</span></button></div><div class="footer">Press Esc to close without changing selection.</div></div></div>
+</div>
+<script>
+'use strict';
+/* Deepgate v0.0.1 — single-file hub and first descent prototype */
+const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
+const shell=document.getElementById('shell'), overlay=document.getElementById('overlay'), noticeEl=document.getElementById('notice');
+let W=0,H=0,dpr=1,last=0,acc=0;
+function resize(){const r=shell.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);W=r.width;H=r.height;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+const keys=new Set();addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Escape')closeOverlay();});addEventListener('keyup',e=>keys.delete(e.code));
+const characters={rook:{id:'rook',name:'ROOK',speed:250,jump:620,hp:140,color:'#ffb452',accent:'#ffe1a8',double:false},nyx:{id:'nyx',name:'NYX',speed:315,jump:590,hp:90,color:'#b884ff',accent:'#ead8ff',double:true}};
+const accountState={unlockedCharacters:['rook','nyx'],hubStorage:{},unlockedPortals:['descent-1'],discoveries:[]};
+let runState={selectedCharacter:'rook',hp:140,tempStats:{},carriedInventory:{},scene:'hub'};
+let scene='hub',camera={x:0,y:0},player,interactLatch=false,resetLatch=false;
+function makePlayer(){const c=characters[runState.selectedCharacter];return{x:390,y:720,w:30,h:44,vx:0,vy:0,onGround:false,jumps:0,face:1,color:c.color,accent:c.accent}};
+const scenes={
+ hub:{name:'TRANSIT HUB',w:2200,h:1450,spawn:{x:390,y:720},platforms:[
+  [0,810,760,80],[900,810,650,80],[1700,810,500,80], [0,1120,650,70],[770,1120,690,70],[1590,1120,610,70], [210,520,500,42],[890,510,420,42],[1510,500,480,42], [310,210,470,42],[1420,205,500,42], [0,1370,2200,80]
+ ],interacts:[
+  {type:'terminal',x:520,y:740,w:65,h:70,label:'ROSTER TERMINAL',hint:'Press E to select fighter'},
+  {type:'portal',id:'descent',x:300,y:1035,w:92,h:85,label:'DESCENT: STRATUM 1',hint:'Press E to descend',active:true},
+  {type:'locked',x:1120,y:1035,w:92,h:85,label:'DEEP STRATUM 2',hint:'LOCKED — Reach deeper milestones'},
+  {type:'locked',x:1800,y:730,w:92,h:80,label:'EAST EXPEDITION',hint:'LOCKED — Survey key required'},
+  {type:'locked',x:80,y:730,w:92,h:80,label:'WEST EXPEDITION',hint:'LOCKED — Signal unavailable'},
+  {type:'locked',x:510,y:120,w:92,h:80,label:'WEST ASCENT',hint:'LOCKED — Elite clearance required'},
+  {type:'locked',x:1660,y:120,w:92,h:80,label:'EAST ASCENT',hint:'LOCKED — Elite clearance required'},
+  {type:'storage',x:1040,y:745,w:65,h:65,label:'HUB STORAGE',hint:'Storage offline in this prototype'}
+ ]},
+ descent:{name:'STRATUM 1: GLOAM CAVERN',w:1700,h:3000,spawn:{x:260,y:180},platforms:[
+  [0,330,600,70],[730,410,420,42],[1250,530,450,42],[290,690,430,42],[850,820,430,42],[1180,1030,400,42],[610,1160,430,42],[130,1320,430,42],[760,1470,420,42],[1190,1640,390,42],[420,1790,440,42],[70,1980,400,42],[660,2150,390,42],[1120,2320,420,42],[590,2510,450,42],[170,2700,420,42],[0,2910,1700,90]
+ ],interacts:[
+  {type:'return',x:300,y:2612,w:100,h:88,label:'EXTRACTION RELAY',hint:'Press E to secure run and return'},
+  {type:'marker',x:1360,y:2260,w:55,h:62,label:'DEPTH MARKER',hint:'Depth relay: 2.2 km'}
+ ]}
+};
+function loadScene(id){scene=id;runState.scene=id;const s=scenes[id];player=makePlayer();player.x=s.spawn.x;player.y=s.spawn.y;camera.x=clamp(player.x-W*.5,0,Math.max(0,s.w-W));camera.y=clamp(player.y-H*.5,0,Math.max(0,s.h-H));}
+loadScene('hub');
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function nearInteraction(){const s=scenes[scene];const cx=player.x+player.w/2,cy=player.y+player.h/2;let best=null,dist=1e9;for(const it of s.interacts){const ix=it.x+it.w/2,iy=it.y+it.h/2,d=Math.hypot(cx-ix,cy-iy);if(d<115&&d<dist){best=it;dist=d}}return best}
+function update(dt){if(overlay.classList.contains('show'))return;const c=characters[runState.selectedCharacter],s=scenes[scene];let dir=(keys.has('KeyA')||keys.has('ArrowLeft')?-1:0)+(keys.has('KeyD')||keys.has('ArrowRight')?1:0);player.vx=dir*c.speed;if(dir)player.face=Math.sign(dir);const wantsJump=keys.has('KeyW')||keys.has('ArrowUp')||keys.has('Space');if(wantsJump&&!player.jumpLatch){if(player.onGround||(c.double&&player.jumps<2)){player.vy=-c.jump;player.onGround=false;player.jumps++;}}player.jumpLatch=wantsJump;player.vy+=1600*dt;player.vy=Math.min(player.vy,950);
+ player.x+=player.vx*dt;player.x=clamp(player.x,0,s.w-player.w);for(const p of s.platforms){if(rects(player,{x:p[0],y:p[1],w:p[2],h:p[3]})){if(player.vx>0)player.x=p[0]-player.w;else if(player.vx<0)player.x=p[0]+p[2]}}
+ const oldY=player.y;player.y+=player.vy*dt;player.onGround=false;for(const p of s.platforms){const q={x:p[0],y:p[1],w:p[2],h:p[3]};if(rects(player,q)){if(player.vy>=0&&oldY+player.h<=q.y+10){player.y=q.y-player.h;player.vy=0;player.onGround=true;player.jumps=0}else if(player.vy<0&&oldY>=q.y+q.h-10){player.y=q.y+q.h;player.vy=0}}}player.y=clamp(player.y,0,s.h-player.h);
+ camera.x+=(clamp(player.x+player.w/2-W/2,0,Math.max(0,s.w-W))-camera.x)*Math.min(1,dt*6);camera.y+=(clamp(player.y+player.h/2-H/2,0,Math.max(0,s.h-H))-camera.y)*Math.min(1,dt*6);
+ const it=nearInteraction();if(keys.has('KeyE')&&!interactLatch&&it){interact(it)}interactLatch=keys.has('KeyE');if(keys.has('KeyR')&&!resetLatch){loadScene(scene);flash('Scene reset.')}resetLatch=keys.has('KeyR');}
+function interact(it){if(it.type==='terminal'){overlay.classList.add('show')}else if(it.type==='portal'&&it.active){loadScene('descent');flash('Portal transit complete: Stratum 1.')}else if(it.type==='return'){runState.carriedInventory={};loadScene('hub');flash('RUN SECURED — Returned safely to the hub.')}else if(it.type==='locked'){flash(it.hint)}else if(it.type==='storage'){flash('Hub storage will arrive with loot and banking in v0.0.2.')}else if(it.type==='marker'){flash(it.hint)}}
+function closeOverlay(){overlay.classList.remove('show')}document.querySelectorAll('.choice').forEach(b=>b.addEventListener('click',()=>{runState.selectedCharacter=b.dataset.id;runState.hp=characters[b.dataset.id].hp;closeOverlay();loadScene('hub');flash(characters[b.dataset.id].name+' selected for the next expedition.')}));
+let noticeTimer=0;function flash(t){noticeEl.textContent=t;noticeEl.classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>noticeEl.classList.remove('show'),2600)}
+function worldX(x){return x-camera.x}function worldY(y){return y-camera.y}
+function draw(){const s=scenes[scene];ctx.clearRect(0,0,W,H);const grad=ctx.createLinearGradient(0,0,0,H);if(scene==='hub'){grad.addColorStop(0,'#111c2d');grad.addColorStop(1,'#06101a')}else{grad.addColorStop(0,'#142034');grad.addColorStop(1,'#03060a')}ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+ // subtle parallax grid / particles
+ ctx.save();ctx.globalAlpha=.22;ctx.strokeStyle=scene==='hub'?'#31536a':'#1c3343';ctx.lineWidth=1;for(let x=(-camera.x*.15)%80;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=(-camera.y*.15)%80;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore();
+ if(scene==='descent'){ctx.fillStyle='#0a0e14';for(let i=0;i<20;i++){let x=(i*223)%s.w,y=(i*379)%s.h;ctx.beginPath();ctx.arc(worldX(x),worldY(y),90+(i%4)*25,0,Math.PI*2);ctx.fill()}}
+ for(const p of s.platforms){let x=worldX(p[0]),y=worldY(p[1]);ctx.fillStyle=scene==='hub'?'#223b50':'#26333f';ctx.fillRect(x,y,p[2],p[3]);ctx.fillStyle=scene==='hub'?'#4c8196':'#5b7181';ctx.fillRect(x,y,p[2],7);ctx.fillStyle='rgba(0,0,0,.24)';ctx.fillRect(x,y+7,p[2],p[3]-7)}
+ for(const it of s.interacts)drawInteract(it);
+ drawPlayer();drawHUD();}
+function drawInteract(it){const x=worldX(it.x),y=worldY(it.y);if(x+it.w<-100||x>W+100||y+it.h<-100||y>H+100)return;ctx.save();if(it.type==='portal'||it.type==='return'){let col=it.type==='return'?'#78f6cd':'#ffad50';ctx.shadowBlur=24;ctx.shadowColor=col;ctx.strokeStyle=col;ctx.lineWidth=5;ctx.beginPath();ctx.roundRect(x+8,y+3,it.w-16,it.h-4,Math.min(36,it.w/3));ctx.stroke();ctx.globalAlpha=.25;ctx.fillStyle=col;ctx.fill();ctx.globalAlpha=1;ctx.fillStyle='#dffcff';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText(it.label,x+it.w/2,y+it.h/2+4)}else if(it.type==='locked'){ctx.strokeStyle='#526171';ctx.lineWidth=4;ctx.strokeRect(x+5,y+5,it.w-10,it.h-10);ctx.fillStyle='rgba(66,79,94,.3)';ctx.fillRect(x+8,y+8,it.w-16,it.h-16);ctx.fillStyle='#94a1ae';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.fillText('LOCKED',x+it.w/2,y+it.h/2+4)}else if(it.type==='terminal'||it.type==='storage'){let col=it.type==='terminal'?'#62dbff':'#66caaf';ctx.fillStyle='#102433';ctx.fillRect(x,y,it.w,it.h);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(x,y,it.w,it.h);ctx.fillStyle=col;ctx.fillRect(x+12,y+12,it.w-24,12);ctx.fillStyle='#c9efff';ctx.font='8px system-ui';ctx.textAlign='center';ctx.fillText(it.type==='terminal'?'ROSTER':'STORAGE',x+it.w/2,y+50)}else if(it.type==='marker'){ctx.fillStyle='#e7d17a';ctx.fillRect(x+20,y,it.w-40,it.h);ctx.fillStyle='#2d2a1d';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.fillText('DEPTH',x+it.w/2,y+26)}ctx.restore()}
+function drawPlayer(){const x=worldX(player.x),y=worldY(player.y);ctx.save();ctx.shadowBlur=18;ctx.shadowColor=player.color;ctx.fillStyle=player.color;ctx.fillRect(x,y,player.w,player.h);ctx.fillStyle=player.accent;ctx.fillRect(x+5,y+7,player.w-10,11);ctx.fillStyle='#121a25';ctx.fillRect(x+(player.face>0?18:5),y+10,7,4);ctx.fillStyle='rgba(255,255,255,.28)';ctx.fillRect(x+4,y+23,player.w-8,4);ctx.restore()}
+function drawHUD(){const c=characters[runState.selectedCharacter],s=scenes[scene],it=nearInteraction();ctx.save();ctx.fillStyle='rgba(5,11,19,.8)';ctx.fillRect(14,52,260,94);ctx.strokeStyle='#2f5872';ctx.strokeRect(14,52,260,94);ctx.fillStyle='#9cdcf1';ctx.font='bold 12px system-ui';ctx.fillText(s.name,26,74);ctx.fillStyle='#dcecff';ctx.font='12px system-ui';ctx.fillText('FIGHTER: '+c.name,26,97);ctx.fillStyle='#5e7184';ctx.fillText('INTEGRITY',26,120);ctx.fillStyle='#22313f';ctx.fillRect(100,110,145,12);ctx.fillStyle=c.color;ctx.fillRect(100,110,145*(runState.hp/c.hp),12);ctx.fillStyle='#e7f6ff';ctx.fillText(runState.hp+' / '+c.hp,150,121);
+ if(scene==='descent'){let depth=Math.max(0,Math.round((player.y-scenes.descent.spawn.y)/10));ctx.fillStyle='rgba(5,11,19,.8)';ctx.fillRect(W-174,52,160,45);ctx.strokeStyle='#2f5872';ctx.strokeRect(W-174,52,160,45);ctx.fillStyle='#a8c6d7';ctx.font='bold 11px system-ui';ctx.fillText('CURRENT DEPTH',W-160,70);ctx.fillStyle='#ffcf83';ctx.font='bold 17px system-ui';ctx.fillText(depth+' m',W-160,89)}
+ if(it){let text=it.hint;ctx.font='bold 13px system-ui';let tw=ctx.measureText(text).width;let bx=W/2-tw/2-16,by=H-68;ctx.fillStyle='rgba(3,8,14,.9)';ctx.fillRect(bx,by,tw+32,34);ctx.strokeStyle='#6ad4ee';ctx.strokeRect(bx,by,tw+32,34);ctx.fillStyle='#e5fbff';ctx.textAlign='center';ctx.fillText('[E] '+text,W/2,by+22);ctx.textAlign='left'}ctx.restore()}
+function frame(t){let dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script>
+</body>
+</html>

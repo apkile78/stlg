@@ -1,0 +1,208 @@
+PROJECT CONTEXT HANDOFF
+=======================
+
+Project Name: Deepgate (working title)
+Build Version: v0.0.1
+Development Mode: ACT
+Last Updated: 2026-10-02
+
+CURRENT BUILD SUMMARY
+---------------------
+v0.0.1 is a playable single-file HTML5 Canvas prototype implementing the first
+vertical slice: a vertical transit hub, fighter selection, a functional descent
+portal, a scrolling beginner cavern, and an extraction return route.
+
+DELIVERABLES
+------------
+- index.html: self-contained playable browser build. No external files,
+  dependencies, server, network request, or build tool are required.
+- context.txt: this recovery/handoff document.
+
+HOW TO RUN
+----------
+Open index.html directly in a modern desktop browser.
+
+CONTROLS
+--------
+A / D or Left / Right Arrow: move.
+W / Up Arrow / Space: jump.
+E: interact with nearby terminals, portals, extraction relay, or markers.
+R: reset the current scene.
+Esc: close the roster selection overlay.
+
+IMPLEMENTED PLAYER FLOW
+-----------------------
+1. Spawn in Transit Hub at the recovery beacon area.
+2. Walk to Roster Terminal and press E.
+3. Select Rook or Nyx.
+4. Walk to the orange descent portal in the lower-left portion of hub and press E.
+5. Traverse downward through Stratum 1: Gloam Cavern.
+6. Reach the green extraction relay near the bottom-left route.
+7. Press E to return safely to hub. A RUN SECURED notification appears.
+
+GAME CONCEPT
+------------
+Original 2D scrolling survival-action platformer with a large future roster of
+mechanically distinct playable characters. The player starts in a safe vertical
+hub, chooses a fighter, enters dangerous portal-based zones, returns alive to
+bank progress, and eventually explores deep, high, and lateral boss routes.
+
+ORIGINALITY RULE
+----------------
+The design may take high-level inspiration from action-platform exploration and
+large-roster fighter design, but all project content must remain original.
+Do not copy protected characters, art, names, level layouts, music, UI, code,
+or other expressive content from referenced games.
+
+WORLD / HUB DESIGN
+------------------
+Hub shape: vertical linear portal spine, with paired left/right portals.
+- Downward portals: deeper Earth interior; darker and harder by depth.
+- Upward portals: elite ascent levels; harder by height.
+- Side portal branches: large expeditions with unique biomes and bosses.
+
+The v0.0.1 hub contains:
+- Functional Roster Terminal.
+- Functional descent portal: DESCENT: STRATUM 1.
+- Functional return route exists inside Stratum 1.
+- Visual Hub Storage station (not functional yet).
+- Locked visual portal frames for west/east expeditions, west/east ascent, and
+  Deep Stratum 2.
+
+PERMADEATH MODEL (DESIGN LOCKED; NOT YET ACTIVE)
+-------------------------------------------------
+Run-based permadeath.
+On death, destroy:
+- run-carried items/materials,
+- equipped gear,
+- temporary stats/upgrades/buffs,
+- current character-run progress.
+
+Persist:
+- account progression,
+- roster unlocks,
+- hub upgrades,
+- unlocked portals,
+- hub-stored resources/items,
+- discoveries, achievements, records, cosmetics.
+
+Banking rule: only items returned to the hub and explicitly deposited in hub
+storage are safe.
+
+v0.0.1 has no enemies, hazards, inventory, or active death. It does contain
+separate in-memory AccountState and RunState objects to support this model.
+
+STATE MODEL IN CURRENT CODE
+---------------------------
+accountState (in memory; later localStorage):
+- unlockedCharacters
+- hubStorage
+- unlockedPortals
+- discoveries
+
+runState (will be wiped on death later):
+- selectedCharacter
+- hp
+- tempStats
+- carriedInventory
+- scene
+
+ROSTER IMPLEMENTED
+------------------
+Rook:
+- Armored scavenger prototype.
+- Speed 250.
+- Standard single jump.
+- Integrity 140.
+- Orange/gold visual identity.
+
+Nyx:
+- Ruins runner prototype.
+- Speed 315.
+- Double jump.
+- Integrity 90.
+- Purple visual identity.
+
+These differences are currently traversal-only. Combat identities are deferred.
+
+IMPLEMENTED TECHNICAL SYSTEMS
+-----------------------------
+- Responsive canvas sizing and device-pixel-ratio handling.
+- Keyboard input handling.
+- Player movement, gravity, jump behavior, double jump logic.
+- Static rectangle platform collision.
+- Scene/world bounds.
+- Two scenes: hub and descent.
+- Smooth player-follow camera with horizontal and vertical clamping.
+- Proximity interaction system.
+- Roster selection HTML overlay.
+- Portal scene transition system.
+- Extraction return transition with notification.
+- HUD for area, fighter, integrity, and descent depth.
+- Canvas-rendered interactables, portals, terminal, platforms, player.
+- Locked portal visual placeholders.
+- AccountState/RunState architectural separation.
+
+KNOWN LIMITATIONS / INTENTIONAL DEFERRALS
+-----------------------------------------
+- No enemies or combat.
+- No damage, hazards, or true death/run wipe.
+- No carried loot/materials.
+- Hub storage is visual only.
+- No deposit/withdraw UI.
+- No crafting or hub upgrades.
+- No saving/localStorage.
+- No portal unlock rules.
+- No additional fighters beyond Rook and Nyx.
+- No attacks, animation system, audio, particles, menus beyond roster selection.
+- No procedural generation.
+- No multiplayer.
+- No mobile touch controls.
+
+NEXT RECOMMENDED ITERATION
+--------------------------
+v0.0.2 — Survival, Banking, and True Permadeath.
+Recommended scope:
+1. Add a simple environmental hazard and/or one basic enemy in Stratum 1.
+2. Add health damage and a death screen.
+3. On death, reset/delete RunState and return to hub; preserve AccountState.
+4. Add one collectible material type to descent.
+5. Make Hub Storage functional: deposit material on safe return or by interacting.
+6. Add localStorage persistence for account state.
+7. Add a run-loss summary and a secured-run summary.
+
+ARCHITECTURE NOTES FOR FUTURE SCALING
+-------------------------------------
+The current single-file implementation is deliberately organized conceptually
+around config/input, data/state, scenes, player physics, interactions, renderer,
+and UI. A future multi-file split should separate:
+- engine/input.js, engine/physics.js, engine/camera.js
+- data/characters.js, data/maps.js
+- systems/combat.js, systems/interactions.js, systems/persistence.js
+- entities/player.js, entities/enemies.js
+- ui/hud.js, ui/menus.js
+
+DESIGN DECISIONS STILL OPEN
+---------------------------
+- Final game title (Deepgate is a temporary working title).
+- Exact setting lore and art direction.
+- Lore explanation for reusable roster fighters after a permadeath run.
+- Exact combat pace/input schema.
+- Whether safe hub return ends a run or allows redeployment in same run.
+- Storage capacity and whether gear can be banked or only materials.
+- Exact procedural/handcrafted/hybrid world structure.
+- Long-term multiplayer decision (currently explicitly deferred).
+
+CHANGELOG
+---------
+v0.0.0 — 2026-10-02
+- Planning baseline established.
+- Defined vertical hub portal structure, roster direction, and permadeath model.
+
+v0.0.1 — 2026-10-02
+- Implemented playable Hub and First Descent vertical slice.
+- Added two selectable traversal-distinct fighters: Rook and Nyx.
+- Added hub, functional roster terminal, descent portal, vertical cavern,
+  extraction return relay, camera, collision, HUD, notifications, and visible
+  locked future portals.
+- Added in-memory AccountState and RunState separation.

@@ -2,115 +2,134 @@ PROJECT CONTEXT HANDOFF
 =======================
 
 Project Name: Deepgate (working title)
-Build Version: v0.0.2-hotfix.3
-Development Mode: DEBUG / ACT
+Build Version: v0.0.2-hotfix.4
+Development Mode: ACT / DEBUG
 Last Updated: 2026-10-02
 
 MANDATORY DELIVERY RULE
 -----------------------
 Every Plan, Act, and Debug response must include complete current versions of
-index.html and context.txt. This hotfix response includes both complete files.
+index.html and context.txt. This response provides both complete artifacts.
 
-BUG REPORT ADDRESSED
---------------------
-The v0.0.2-hotfix.2 hub rendered but had three movement/layout defects:
-1. Solid central shaft blocks caused player collision/clipping.
-2. Those blocks obstructed lift access.
-3. The manual stepped path was trapped by full-width deck floor/ceiling colliders,
-   so it could not be used to travel between hub decks.
-
-ROOT CAUSE
-----------
-The hub platform array included central solid rectangles at x=600 to x=900 over
-large vertical ranges. These acted as collision blocks rather than decorative
-lift shaft walls. Full-width deck slabs at y=440, 830, 1220, and 1560 also
-closed off vertical spaces, preventing the side stair steps from functioning as
-actual routes between decks.
-
-HOTFIX.3 CHANGES
+HOTFIX.4 PURPOSE
 ----------------
-1. Removed all central shaft collision blocks.
-- The area from x=600 through x=900 is now open transit space.
-- The lift cores and beacon remain interactable visual entities, not colliders.
-- Player spawn remains on the central deck surface, but is no longer embedded
-  inside a solid rectangle.
+Rebuild hub geometry to the manager-defined three-floor layout and introduce
+one-way platform physics for lift pads and manual stair stepping stones.
 
-2. Changed central shaft appearance to rendering-only.
-- The shaft is shown as a dashed gold OPEN TRANSIT SHAFT frame.
-- It has no physical collision.
+IMPLEMENTED HUB LAYOUT
+----------------------
+The hub now has exactly three floors:
+1. Ascent Floor at y=250.
+2. Central Lobby at y=900.
+3. Descent Floor at y=1420.
 
-3. Preserved lift access.
-- Lift cores on central, ascent, and descent deck remain reachable.
-- The lift is still the official universal hub travel method.
+Each floor has:
+- Left normal-solid wall floor: x=0 through x=560.
+- Right normal-solid wall floor: x=940 through x=1500.
+- Center gap: x=560 through x=940.
+- Centered one-way lift platform: x=660 through x=840.
+- Open central transit shaft between floors.
 
-4. Revised hub physical layout.
-- Hub collision geometry now uses deck floors plus side stair steps only.
-- Side steps are no longer blocked by central shaft rectangles.
-- The layout intentionally keeps the central shaft open and the side routes
-  visually/physically separate.
+The Central Lobby has 650 pixels vertical clearance to Ascent and 520 pixels to
+Descent, visibly larger/more open than the regular floor structure.
 
-IMPORTANT LIMITATION
---------------------
-The existing platform physics treats every platform as a solid rectangle from
-all sides. The manual steps now no longer collide with the removed central
-shaft, but the design still uses full-width deck floors. This hotfix focuses on
-removing the clipping and lift-access defects. If manual travel is still
-awkward because a deck floor seals an edge, the next planned revision should
-replace side steps with true one-way platforms or explicit ladder/climb zones.
-
-CURRENT PLAYABLE FEATURES
--------------------------
-- HTML5 Canvas static-browser build.
-- Symmetric three-deck Transit Hub.
-- Two left/right portal destinations per portal deck.
-- Central Lift deck-selector.
-- Rook and Nyx roster selection.
-- Tutorial route and Stratum 1 descent route.
-- Salvage pickup, carry count, extraction banking, banked storage display.
-- Green hazards, health/integrity, run-loss handling, and localStorage account
-  persistence.
-- Canvas compatibility helper and persistent runtime error panel.
-
-CONTROLS
---------
-A / D or Left / Right Arrow: move.
-W / Up Arrow / Space: jump.
-E: interact.
-R: reset current scene.
-Esc: close an overlay.
-
-TEST CHECKLIST FOR HOTFIX.3
+PORTAL / FACILITY PLACEMENT
 ---------------------------
-1. Spawn in hub without being clipped or pushed out.
-2. Move around central deck and reach Roster, Storage, Tutorial, and Lift.
-3. Interact with central Lift Core using E.
-4. Use Lift menu to move between Ascent, Central, and Descent decks.
-5. Verify player does not spawn inside a block after lift travel.
-6. Test side stepped routes; report any remaining roof/floor blockage and exact
-   deck/location.
-7. Enter Tutorial and Stratum 1 to verify normal game loop still functions.
+Ascent Floor:
+- Far left: West Ascent I, locked.
+- Far right: East Ascent I, locked.
+- Center: one-way lift pad.
 
-KNOWN LIMITATIONS / NEXT LIKELY FIX
------------------------------------
-- True manual hub traversal may need dedicated one-way platforms or ladders.
-- Current collision is generic full-solid AABB collision, so it cannot yet
-  support passing upward through a platform then landing on it.
-- No combat/enemies/attacks.
-- Test Ground remains locked placeholder.
-- No progression/unlock logic for locked portals.
-- No crafting, inventory equipment, audio, multiplayer, or mobile controls.
+Central Lobby:
+- Far left: Test Ground, locked placeholder.
+- Inner left: Roster Terminal.
+- Center: Recovery Beacon and one-way lift pad.
+- Inner right: Hub Storage.
+- Far right: Tutorial, active portal.
 
-RECOMMENDED NEXT PLAN ITEM
+Descent Floor:
+- Far left: Stratum 1, active portal.
+- Center: one-way lift pad.
+- Far right: Stratum 2, locked.
+
+MANUAL STAIR ROUTES
+-------------------
+The hub includes three one-way stepping stones for each manual connection:
+- Descent -> Lobby: x=380/y=1270, x=530/y=1120, x=680/y=980.
+- Lobby -> Ascent: x=1000/y=735, x=850/y=570, x=700/y=405.
+
+The center shaft stays open. Steps are one-way platforms, not wall floors.
+Lift remains the primary fast/reliable hub traversal choice.
+
+ONE-WAY PLATFORM SYSTEM
+-----------------------
+New platform types:
+- solid: full normal collision from top, underside, and sides.
+- oneWay: collision only when player is falling onto its top surface.
+
+One-way behavior:
+- Player jumps upward through one-way lift pads and stepping stones.
+- Player lands on the top while falling.
+- Player can drop down with S + Jump or Down Arrow + Jump.
+- Drop action starts a short 0.22-second collision-ignore timer for one-way
+  platforms only. Solid wall floors remain solid.
+
+INPUTS
+------
+A / D or Left / Right Arrow: Move.
+W / Up Arrow / Space: Jump.
+S / Down Arrow + Jump: Drop through one-way platform.
+E: Interact.
+R: Reset current scene.
+Esc: Close overlay.
+
+EXISTING FEATURES RETAINED
 --------------------------
-Hub Traversal Polish before v0.0.3 combat:
-- Add explicit ladder climb zones, OR
-- Add one-way platform collision on hub deck floors/steps, OR
-- Use lift-only navigation and convert manual side stair system to decorative
-  catwalks until a dedicated climb system exists.
+- Full self-contained HTML5 Canvas static build.
+- Runtime error overlay and Canvas roundRect compatibility helper.
+- Rook: 140 integrity, standard jump, speed 245.
+- Nyx: 90 integrity, double jump, speed 315.
+- Central lift deck selector.
+- Tutorial starter route.
+- Stratum 1 vertical survival zone.
+- Salvage collectibles.
+- Environmental hazards and real health damage.
+- Extraction banking.
+- Run-loss permadeath screen.
+- Browser localStorage for banked Salvage account state.
+
+TEST CHECKLIST
+--------------
+1. Spawn in Central Lobby without clipping.
+2. Walk across the split solid wall floors and central one-way lift pad.
+3. Jump upward through lift pads and stair stones.
+4. Fall onto lift pads/stair stones and confirm landing works.
+5. Press S/Down + Jump while standing on a one-way platform; confirm drop-through.
+6. Use central lift from every floor.
+7. Test Rook manual movement from Descent to Lobby and Lobby to Ascent.
+8. Test manual downward route with drop-through input.
+9. Confirm Roster, Storage, Tutorial, Stratum 1, Salvage, hazards, extraction,
+   and banked storage all still work.
+10. If a red RUNTIME ERROR panel appears, report exact text and screenshot.
+
+KNOWN LIMITATIONS
+-----------------
+- The manual stair route is an initial geometry/prototype pass and may need
+  coordinate tuning after real browser testing.
+- No attacks, combat, enemies, enemy AI, or training dummy.
+- Test Ground still locked.
+- No portal unlocking progression, crafting, equipment, audio, mobile controls,
+  multiplayer, or manual inventory management.
+
+NEXT RECOMMENDED STEP
+---------------------
+Debug hotfix.4 in browser first. If hub traversal is confirmed, return to Plan
+mode for v0.0.3 Combat Foundation and functional Test Ground.
 
 CHANGELOG
 ---------
-v0.0.2-hotfix.1 — Fixed collectible Set initialization attempt.
-v0.0.2-hotfix.2 — Replaced Canvas roundRect and added visible runtime errors.
-v0.0.2-hotfix.3 — Removed central shaft collision blocks, fixed clipping/lift
-                    obstruction, and changed shaft to render-only open space.
+v0.0.2-hotfix.1 — Fixed collected Set initialization.
+v0.0.2-hotfix.2 — Removed Canvas roundRect dependency and added runtime error UI.
+v0.0.2-hotfix.3 — Removed central shaft solid collision blocks.
+v0.0.2-hotfix.4 — Added split wall floors, central one-way lift pads, one-way
+                    stair stones, drop-through input, and rebuilt hub placement.

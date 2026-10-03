@@ -2,75 +2,74 @@ PROJECT CONTEXT HANDOFF
 =======================
 
 Project Name: Deepgate (working title)
-Build Version: v0.0.2-hotfix.2
-Development Mode: ACT / DEBUG
+Build Version: v0.0.2-hotfix.3
+Development Mode: DEBUG / ACT
 Last Updated: 2026-10-02
 
-MANDATORY ARTIFACT RULE
+MANDATORY DELIVERY RULE
 -----------------------
 Every Plan, Act, and Debug response must include complete current versions of
-both index.html and context.txt. No response may identify a fix but defer the
-complete artifact delivery to a later response.
+index.html and context.txt. This hotfix response includes both complete files.
 
-BUILD PURPOSE
--------------
-v0.0.2-hotfix.2 is a full replacement for the broken hotfix.1 build. It keeps
-the entire v0.0.2 feature set and applies both known rendering fixes.
+BUG REPORT ADDRESSED
+--------------------
+The v0.0.2-hotfix.2 hub rendered but had three movement/layout defects:
+1. Solid central shaft blocks caused player collision/clipping.
+2. Those blocks obstructed lift access.
+3. The manual stepped path was trapped by full-width deck floor/ceiling colliders,
+   so it could not be used to travel between hub decks.
 
-FIXES IN THIS BUILD
--------------------
-1. Scene collectible tracker fix:
-- cloneScene now uses:
-  return { ...s, collected: new Set() };
-- This prevents source-scene undefined values from overwriting the newly created
-  Set and crashing when game logic calls .has() or .add().
+ROOT CAUSE
+----------
+The hub platform array included central solid rectangles at x=600 to x=900 over
+large vertical ranges. These acted as collision blocks rather than decorative
+lift shaft walls. Full-width deck slabs at y=440, 830, 1220, and 1560 also
+closed off vertical spaces, preventing the side stair steps from functioning as
+actual routes between decks.
 
-2. Canvas rounded rectangle compatibility fix:
-- All direct ctx.roundRect calls were removed.
-- Portal rendering now uses a custom roundedRect(context, x, y, width, height,
-  radius) path helper based on moveTo and arcTo.
-- This avoids browser/WebView compatibility failures in draw code.
-
-3. Persistent runtime diagnostics:
-- Any uncaught JavaScript error displays a centered red RUNTIME ERROR panel.
-- The browser console also logs the original exception.
-- If that panel appears, copy its exact text and report it with a screenshot.
-
-HOW TO DEPLOY
--------------
-Replace both files in the GitHub repository root:
-- index.html
-- context.txt
-
-Commit and push. Allow GitHub Pages to publish, then hard-refresh with:
-Ctrl + Shift + R
-
-GitHub Pages expected layout:
-repository root/
-- index.html
-- context.txt
-
-CURRENT FEATURES
+HOTFIX.3 CHANGES
 ----------------
-- Standalone HTML5 Canvas game with no external dependencies/assets.
+1. Removed all central shaft collision blocks.
+- The area from x=600 through x=900 is now open transit space.
+- The lift cores and beacon remain interactable visual entities, not colliders.
+- Player spawn remains on the central deck surface, but is no longer embedded
+  inside a solid rectangle.
+
+2. Changed central shaft appearance to rendering-only.
+- The shaft is shown as a dashed gold OPEN TRANSIT SHAFT frame.
+- It has no physical collision.
+
+3. Preserved lift access.
+- Lift cores on central, ascent, and descent deck remain reachable.
+- The lift is still the official universal hub travel method.
+
+4. Revised hub physical layout.
+- Hub collision geometry now uses deck floors plus side stair steps only.
+- Side steps are no longer blocked by central shaft rectangles.
+- The layout intentionally keeps the central shaft open and the side routes
+  visually/physically separate.
+
+IMPORTANT LIMITATION
+--------------------
+The existing platform physics treats every platform as a solid rectangle from
+all sides. The manual steps now no longer collide with the removed central
+shaft, but the design still uses full-width deck floors. This hotfix focuses on
+removing the clipping and lift-access defects. If manual travel is still
+awkward because a deck floor seals an edge, the next planned revision should
+replace side steps with true one-way platforms or explicit ladder/climb zones.
+
+CURRENT PLAYABLE FEATURES
+-------------------------
+- HTML5 Canvas static-browser build.
 - Symmetric three-deck Transit Hub.
-- Exactly two left/right portal destinations per portal deck.
-- Central Lift: universal safe deck travel via E menu.
-- Secondary stepped platform routes between decks.
-- Ascent Deck: two locked ascent portals.
-- Central Deck: locked Test Ground left, active Tutorial right.
-- Descent Deck: active Stratum 1 left, locked Stratum 2 right.
-- Roster Terminal and Hub Storage.
-- Recovery beacon.
-- Rook: 140 integrity, standard jump, speed 245.
-- Nyx: 90 integrity, double jump, speed 315.
-- Tutorial: rightward starter route with Salvage, one hazard, extraction.
-- Stratum 1: vertical cavern route with Salvage, hazards, extraction, depth HUD.
-- Green hazards damage integrity.
-- Cyan Salvage pickups are carried during a run.
-- Extraction automatically banks carried Salvage.
-- Death opens a Run Lost screen and destroys unbanked Salvage.
-- Banked Salvage persists in localStorage.
+- Two left/right portal destinations per portal deck.
+- Central Lift deck-selector.
+- Rook and Nyx roster selection.
+- Tutorial route and Stratum 1 descent route.
+- Salvage pickup, carry count, extraction banking, banked storage display.
+- Green hazards, health/integrity, run-loss handling, and localStorage account
+  persistence.
+- Canvas compatibility helper and persistent runtime error panel.
 
 CONTROLS
 --------
@@ -78,71 +77,40 @@ A / D or Left / Right Arrow: move.
 W / Up Arrow / Space: jump.
 E: interact.
 R: reset current scene.
-Esc: close a modal overlay.
+Esc: close an overlay.
 
-CORE LOOP
----------
-Hub -> choose fighter -> enter Tutorial or Stratum 1 -> gather Salvage ->
-avoid hazards -> extract and bank Salvage OR die and lose unbanked Salvage ->
-return to hub.
+TEST CHECKLIST FOR HOTFIX.3
+---------------------------
+1. Spawn in hub without being clipped or pushed out.
+2. Move around central deck and reach Roster, Storage, Tutorial, and Lift.
+3. Interact with central Lift Core using E.
+4. Use Lift menu to move between Ascent, Central, and Descent decks.
+5. Verify player does not spawn inside a block after lift travel.
+6. Test side stepped routes; report any remaining roof/floor blockage and exact
+   deck/location.
+7. Enter Tutorial and Stratum 1 to verify normal game loop still functions.
 
-PERSISTENCE / PERMADEATH
-------------------------
-Account state is stored through localStorage key: deepgate-account-v002
-
-Persists:
-- banked Salvage,
-- future account unlocks/progression structure.
-
-Does not persist and is lost on death:
-- carried Salvage,
-- current health,
-- current scene/run position,
-- future temporary stats/items/upgrades.
-
-Testing note:
-- Browser refresh starts a new run and clears carried Salvage.
-- Banked Salvage remains for the same browser profile and site origin.
-- Incognito/private mode, clearing site data, or a changed domain/path can
-  create a fresh account state.
-
-HOTFIX.2 TEST CHECKLIST
------------------------
-1. The game must show platforms, player, HUD, portals, and hub stations.
-2. No blank canvas should occur.
-3. Roster terminal opens and allows Rook/Nyx selection.
-4. Lift opens and transports player among three decks.
-5. Tutorial loads and displays Salvage/hazard/extraction.
-6. Stratum 1 loads and displays platforms, Salvage, hazards, and depth HUD.
-7. Extraction banks Salvage; Hub Storage reflects new total after return.
-8. If health reaches zero, Run Lost overlay displays and carried Salvage is lost.
-9. If an error occurs, report the exact text from the red RUNTIME ERROR panel.
-
-KNOWN LIMITATIONS
------------------
-- No attack/combat system, enemies, enemy AI, or training dummy.
+KNOWN LIMITATIONS / NEXT LIKELY FIX
+-----------------------------------
+- True manual hub traversal may need dedicated one-way platforms or ladders.
+- Current collision is generic full-solid AABB collision, so it cannot yet
+  support passing upward through a platform then landing on it.
+- No combat/enemies/attacks.
 - Test Ground remains locked placeholder.
-- No portal unlocking logic.
-- No manual inventory/deposit/withdraw system; extraction auto-banks Salvage.
-- No crafting, equipment, audio, animation frames, procedural generation,
-  mobile controls, multiplayer, or account export/import.
+- No progression/unlock logic for locked portals.
+- No crafting, inventory equipment, audio, multiplayer, or mobile controls.
 
-NEXT RECOMMENDED PLAN TARGET
-----------------------------
-v0.0.3 — Combat Foundation and Test Ground:
-- Unlock Test Ground.
-- Add universal attack/hitbox/hurtbox system.
-- Add knockback and hit feedback.
-- Add a training dummy.
-- Give Rook and Nyx unique first attacks.
-- Later add a basic enemy to Stratum 1.
+RECOMMENDED NEXT PLAN ITEM
+--------------------------
+Hub Traversal Polish before v0.0.3 combat:
+- Add explicit ladder climb zones, OR
+- Add one-way platform collision on hub deck floors/steps, OR
+- Use lift-only navigation and convert manual side stair system to decorative
+  catwalks until a dedicated climb system exists.
 
 CHANGELOG
 ---------
-v0.0.0 — Initial planning baseline.
-v0.0.1 — Hub and First Descent traversal prototype.
-v0.0.2 — Symmetric hub, lift, tutorial, Salvage, hazards, banking, persistence,
-           and run-loss loop.
-v0.0.2-hotfix.1 — Attempted collectible tracker initialization correction.
-v0.0.2-hotfix.2 — Full replacement build; fixes collectible Set order, removes
-                    Canvas roundRect dependency, and adds persistent error UI.
+v0.0.2-hotfix.1 — Fixed collectible Set initialization attempt.
+v0.0.2-hotfix.2 — Replaced Canvas roundRect and added visible runtime errors.
+v0.0.2-hotfix.3 — Removed central shaft collision blocks, fixed clipping/lift
+                    obstruction, and changed shaft to render-only open space.
